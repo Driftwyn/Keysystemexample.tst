@@ -1,0 +1,90 @@
+local HttpService = game:GetService("HttpService")
+local Players = game:GetService("Players")
+local Player = Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+
+function DriftwynLib:ShowKeySystem(config)
+    local keyGui = Instance.new("ScreenGui", PlayerGui)
+    keyGui.Name = "DriftwynKeySystem"
+    keyGui.ResetOnSpawn = false
+    keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local mainFrame = Instance.new("Frame", keyGui)
+    mainFrame.Size = UDim2.new(0, 300, 0, 190)
+    mainFrame.Position = UDim2.new(0.5, -150, 0.5, -95)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Active = true
+    mainFrame.Draggable = true
+
+    local title = Instance.new("TextLabel", mainFrame)
+    title.Size = UDim2.new(1, 0, 0, 35)
+    title.BackgroundTransparency = 1
+    title.Text = "🔐 Driftwyn Hub - Key System"
+    title.TextColor3 = Color3.fromRGB(200, 200, 255)
+    title.TextScaled = true
+    title.Font = Enum.Font.GothamBold
+
+    local input = Instance.new("TextBox", mainFrame)
+    input.PlaceholderText = "Enter your key here"
+    input.Size = UDim2.new(1, -40, 0, 30)
+    input.Position = UDim2.new(0, 20, 0, 50)
+    input.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+    input.TextColor3 = Color3.fromRGB(255, 255, 255)
+    input.Text = ""
+    input.Font = Enum.Font.Gotham
+    input.TextScaled = true
+    input.BorderSizePixel = 0
+
+    local function makeButton(text, yOffset)
+        local btn = Instance.new("TextButton", mainFrame)
+        btn.Size = UDim2.new(1, -40, 0, 30)
+        btn.Position = UDim2.new(0, 20, 0, yOffset)
+        btn.BackgroundColor3 = Color3.fromRGB(80, 60, 120)
+        btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+        btn.Font = Enum.Font.GothamBold
+        btn.Text = text
+        btn.TextScaled = true
+        btn.BorderSizePixel = 0
+        return btn
+    end
+
+    local checkBtn = makeButton("✅ Check Key", 90)
+    local getBtn = makeButton("🔗 Get Key", 125)
+    local discordBtn = makeButton("💬 Join Discord", 160)
+
+    checkBtn.MouseButton1Click:Connect(function()
+        local key = input.Text
+
+        if config.RemoteURL then
+            local success, response = pcall(function()
+                return HttpService:JSONDecode(game:HttpGet(config.RemoteURL))
+            end)
+            if success and response and table.find(response.valid_keys or {}, key) then
+                keyGui:Destroy()
+                if config.OnSuccess then config.OnSuccess() end
+            else
+                input.Text = "❌ Invalid key!"
+            end
+        elseif config.ValidKeys and table.find(config.ValidKeys, key) then
+            keyGui:Destroy()
+            if config.OnSuccess then config.OnSuccess() end
+        else
+            input.Text = "❌ Invalid key!"
+        end
+    end)
+
+    getBtn.MouseButton1Click:Connect(function()
+        if config.KeyLink then
+            setclipboard(config.KeyLink)
+            input.Text = "🔗 Key link copied!"
+        end
+    end)
+
+    discordBtn.MouseButton1Click:Connect(function()
+        if config.DiscordLink then
+            setclipboard(config.DiscordLink)
+            input.Text = "💬 Discord copied!"
+        end
+    end)
+end
