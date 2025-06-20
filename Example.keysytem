@@ -1,8 +1,19 @@
+local DriftwynLib = {}
+
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
+-- Optional: placeholder window function
+function DriftwynLib:CreateWindow(config)
+    warn("DriftwynLib:CreateWindow() not implemented.")
+    return {
+        AddTab = function() return {} end,
+    }
+end
+
+-- Full key system with HWID + Expiration support
 function DriftwynLib:ShowKeySystem(config)
     local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "DriftwynKeySystem"
@@ -58,31 +69,57 @@ function DriftwynLib:ShowKeySystem(config)
     local getBtn = makeButton("🔗 Get Key", 125)
     local discordBtn = makeButton("💬 Join Discord", 160)
 
+    local function setError(msg)
+        input.Text = msg
+        task.delay(2, function()
+            if input and input.Parent then
+                input.Text = ""
+            end
+        end)
+    end
+
     checkBtn.MouseButton1Click:Connect(function()
         local key = input.Text
+        local hwid = Player.UserId
 
-        -- Remote URL check
         if config.RemoteURL then
-            local success, response = pcall(function()
-                local raw = game:HttpGet(config.RemoteURL)
-                return HttpService:JSONDecode(raw)
+            local success, result = pcall(function()
+                local response = game:HttpGet(config.RemoteURL)
+                return HttpService:JSONDecode(response)
             end)
 
-            if success and response and table.find(response.valid_keys or {}, key) then
-                print("✅ Valid key!")
-                keyGui:Destroy()
-                if config.OnSuccess then config.OnSuccess() end
+            if success and typeof(result) == "table" then
+                local match
+                for _, entry in ipairs(result) do
+                    if entry.key == key then
+                        match = entry
+                        break
+                    end
+                end
+
+                if match then
+                    if tonumber(match.hwid) ~= hwid then
+                        setError("🔐 HWID Mismatch")
+                        return
+                    end
+                    if match.expires and os.time() > tonumber(match.expires) then
+                        setError("⏰ Key Expired")
+                        return
+                    end
+                    keyGui:Destroy()
+                    if config.OnSuccess then config.OnSuccess() end
+                else
+                    setError("❌ Invalid Key")
+                end
             else
-                input.Text = "❌ Invalid key!"
+                setError("⚠️ Server Error")
             end
 
-        -- Local ValidKeys check
         elseif config.ValidKeys and table.find(config.ValidKeys, key) then
-            print("✅ Valid key!")
             keyGui:Destroy()
             if config.OnSuccess then config.OnSuccess() end
         else
-            input.Text = "❌ Invalid key!"
+            setError("❌ Invalid Key")
         end
     end)
 
@@ -90,6 +127,11 @@ function DriftwynLib:ShowKeySystem(config)
         if config.KeyLink then
             pcall(setclipboard, config.KeyLink)
             input.Text = "🔗 Key link copied!"
+            task.delay(2, function()
+                if input and input.Parent then
+                    input.Text = ""
+                end
+            end)
         end
     end)
 
@@ -97,6 +139,13 @@ function DriftwynLib:ShowKeySystem(config)
         if config.DiscordLink then
             pcall(setclipboard, config.DiscordLink)
             input.Text = "💬 Discord copied!"
+            task.delay(2, function()
+                if input and input.Parent then
+                    input.Text = ""
+                end
+            end)
         end
     end)
 end
+
+return DriftwynLib
