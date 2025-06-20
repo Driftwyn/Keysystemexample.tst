@@ -5,15 +5,14 @@ local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- Optional: placeholder window function
+-- Placeholder for your UI system
 function DriftwynLib:CreateWindow(config)
-    warn("DriftwynLib:CreateWindow() not implemented.")
+    warn("DriftwynLib:CreateWindow() not implemented yet.")
     return {
         AddTab = function() return {} end,
     }
 end
 
--- Full key system with HWID + Expiration support
 function DriftwynLib:ShowKeySystem(config)
     local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "DriftwynKeySystem"
@@ -80,46 +79,34 @@ function DriftwynLib:ShowKeySystem(config)
 
     checkBtn.MouseButton1Click:Connect(function()
         local key = input.Text
-        local hwid = Player.UserId
 
         if config.RemoteURL then
             local success, result = pcall(function()
                 local response = game:HttpGet(config.RemoteURL)
-                return HttpService:JSONDecode(response)
+                if response:sub(1, 1) == "{" then
+                    return HttpService:JSONDecode(response)
+                else
+                    return loadstring(response)()
+                end
             end)
 
-            if success and typeof(result) == "table" then
-                local match
-                for _, entry in ipairs(result) do
-                    if entry.key == key then
-                        match = entry
-                        break
-                    end
-                end
-
-                if match then
-                    if tonumber(match.hwid) ~= hwid then
-                        setError("🔐 HWID Mismatch")
-                        return
-                    end
-                    if match.expires and os.time() > tonumber(match.expires) then
-                        setError("⏰ Key Expired")
-                        return
-                    end
+            if success then
+                local validKeys = result.valid_keys or result
+                if typeof(validKeys) == "table" and table.find(validKeys, key) then
                     keyGui:Destroy()
                     if config.OnSuccess then config.OnSuccess() end
                 else
-                    setError("❌ Invalid Key")
+                    setError("❌ Invalid key!")
                 end
             else
-                setError("⚠️ Server Error")
+                setError("⚠️ Failed to fetch keys!")
             end
 
         elseif config.ValidKeys and table.find(config.ValidKeys, key) then
             keyGui:Destroy()
             if config.OnSuccess then config.OnSuccess() end
         else
-            setError("❌ Invalid Key")
+            setError("❌ Invalid key!")
         end
     end)
 
