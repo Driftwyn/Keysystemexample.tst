@@ -5,21 +5,23 @@ local Players = game:GetService("Players")
 local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
--- Placeholder for your UI system
+-- Just a placeholder for your UI window creation for now
 function DriftwynLib:CreateWindow(config)
-    warn("DriftwynLib:CreateWindow() not implemented yet.")
+    warn("Hey! CreateWindow() isn't done yet.")
     return {
         AddTab = function() return {} end,
     }
 end
 
 function DriftwynLib:ShowKeySystem(config)
+    -- Create the main GUI container
     local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "DriftwynKeySystem"
     keyGui.ResetOnSpawn = false
     keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     keyGui.Parent = PlayerGui
 
+    -- The main frame where everything sits
     local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 300, 0, 190)
     mainFrame.Position = UDim2.new(0.5, -150, 0.5, -95)
@@ -29,15 +31,17 @@ function DriftwynLib:ShowKeySystem(config)
     mainFrame.Draggable = true
     mainFrame.Parent = keyGui
 
+    -- Title label
     local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 35)
     title.BackgroundTransparency = 1
-    title.Text = "🔐 Driftwyn Hub - Key System"
+    title.Text = "Driftwyn Hub - Key System"
     title.TextColor3 = Color3.fromRGB(200, 200, 255)
     title.TextScaled = true
     title.Font = Enum.Font.GothamBold
     title.Parent = mainFrame
 
+    -- Input box for the key
     local input = Instance.new("TextBox")
     input.PlaceholderText = "Enter your key here"
     input.Size = UDim2.new(1, -40, 0, 30)
@@ -50,6 +54,7 @@ function DriftwynLib:ShowKeySystem(config)
     input.BorderSizePixel = 0
     input.Parent = mainFrame
 
+    -- Helper function to create buttons
     local function makeButton(text, yOffset)
         local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, -40, 0, 30)
@@ -64,10 +69,11 @@ function DriftwynLib:ShowKeySystem(config)
         return btn
     end
 
-    local checkBtn = makeButton("✅ Check Key", 90)
-    local getBtn = makeButton("🔗 Get Key", 125)
-    local discordBtn = makeButton("💬 Join Discord", 160)
+    local checkBtn = makeButton("Check Key", 90)
+    local getBtn = makeButton("Get Key", 125)
+    local discordBtn = makeButton("Join Discord", 160)
 
+    -- Show error on input box and clear it after 2 seconds
     local function setError(msg)
         input.Text = msg
         task.delay(2, function()
@@ -77,12 +83,14 @@ function DriftwynLib:ShowKeySystem(config)
         end)
     end
 
+    -- What happens when "Check Key" is clicked
     checkBtn.MouseButton1Click:Connect(function()
         local key = input.Text
 
         if config.RemoteURL then
             local success, result = pcall(function()
                 local response = game:HttpGet(config.RemoteURL)
+                -- try to decode JSON or run as Lua script
                 if response:sub(1, 1) == "{" then
                     return HttpService:JSONDecode(response)
                 else
@@ -96,24 +104,25 @@ function DriftwynLib:ShowKeySystem(config)
                     keyGui:Destroy()
                     if config.OnSuccess then config.OnSuccess() end
                 else
-                    setError("❌ Invalid key!")
+                    setError("Invalid key!")
                 end
             else
-                setError("⚠️ Failed to fetch keys!")
+                setError("Failed to fetch keys!")
             end
 
         elseif config.ValidKeys and table.find(config.ValidKeys, key) then
             keyGui:Destroy()
             if config.OnSuccess then config.OnSuccess() end
         else
-            setError("❌ Invalid key!")
+            setError("Invalid key!")
         end
     end)
 
+    -- "Get Key" copies the key link to clipboard
     getBtn.MouseButton1Click:Connect(function()
         if config.KeyLink then
             pcall(setclipboard, config.KeyLink)
-            input.Text = "🔗 Key link copied!"
+            input.Text = "Key link copied!"
             task.delay(2, function()
                 if input and input.Parent then
                     input.Text = ""
@@ -122,10 +131,11 @@ function DriftwynLib:ShowKeySystem(config)
         end
     end)
 
+    -- "Join Discord" copies the discord link to clipboard
     discordBtn.MouseButton1Click:Connect(function()
         if config.DiscordLink then
             pcall(setclipboard, config.DiscordLink)
-            input.Text = "💬 Discord copied!"
+            input.Text = "Discord copied!"
             task.delay(2, function()
                 if input and input.Parent then
                     input.Text = ""
