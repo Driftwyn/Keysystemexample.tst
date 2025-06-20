@@ -4,28 +4,31 @@ local Player = Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 
 function DriftwynLib:ShowKeySystem(config)
-    local keyGui = Instance.new("ScreenGui", PlayerGui)
+    local keyGui = Instance.new("ScreenGui")
     keyGui.Name = "DriftwynKeySystem"
     keyGui.ResetOnSpawn = false
     keyGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    keyGui.Parent = PlayerGui
 
-    local mainFrame = Instance.new("Frame", keyGui)
+    local mainFrame = Instance.new("Frame")
     mainFrame.Size = UDim2.new(0, 300, 0, 190)
     mainFrame.Position = UDim2.new(0.5, -150, 0.5, -95)
     mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 50)
     mainFrame.BorderSizePixel = 0
     mainFrame.Active = true
     mainFrame.Draggable = true
+    mainFrame.Parent = keyGui
 
-    local title = Instance.new("TextLabel", mainFrame)
+    local title = Instance.new("TextLabel")
     title.Size = UDim2.new(1, 0, 0, 35)
     title.BackgroundTransparency = 1
     title.Text = "🔐 Driftwyn Hub - Key System"
     title.TextColor3 = Color3.fromRGB(200, 200, 255)
     title.TextScaled = true
     title.Font = Enum.Font.GothamBold
+    title.Parent = mainFrame
 
-    local input = Instance.new("TextBox", mainFrame)
+    local input = Instance.new("TextBox")
     input.PlaceholderText = "Enter your key here"
     input.Size = UDim2.new(1, -40, 0, 30)
     input.Position = UDim2.new(0, 20, 0, 50)
@@ -35,9 +38,10 @@ function DriftwynLib:ShowKeySystem(config)
     input.Font = Enum.Font.Gotham
     input.TextScaled = true
     input.BorderSizePixel = 0
+    input.Parent = mainFrame
 
     local function makeButton(text, yOffset)
-        local btn = Instance.new("TextButton", mainFrame)
+        local btn = Instance.new("TextButton")
         btn.Size = UDim2.new(1, -40, 0, 30)
         btn.Position = UDim2.new(0, 20, 0, yOffset)
         btn.BackgroundColor3 = Color3.fromRGB(80, 60, 120)
@@ -46,6 +50,7 @@ function DriftwynLib:ShowKeySystem(config)
         btn.Text = text
         btn.TextScaled = true
         btn.BorderSizePixel = 0
+        btn.Parent = mainFrame
         return btn
     end
 
@@ -56,17 +61,24 @@ function DriftwynLib:ShowKeySystem(config)
     checkBtn.MouseButton1Click:Connect(function()
         local key = input.Text
 
+        -- Remote URL check
         if config.RemoteURL then
             local success, response = pcall(function()
-                return HttpService:JSONDecode(game:HttpGet(config.RemoteURL))
+                local raw = game:HttpGet(config.RemoteURL)
+                return HttpService:JSONDecode(raw)
             end)
+
             if success and response and table.find(response.valid_keys or {}, key) then
+                print("✅ Valid key!")
                 keyGui:Destroy()
                 if config.OnSuccess then config.OnSuccess() end
             else
                 input.Text = "❌ Invalid key!"
             end
+
+        -- Local ValidKeys check
         elseif config.ValidKeys and table.find(config.ValidKeys, key) then
+            print("✅ Valid key!")
             keyGui:Destroy()
             if config.OnSuccess then config.OnSuccess() end
         else
@@ -76,14 +88,14 @@ function DriftwynLib:ShowKeySystem(config)
 
     getBtn.MouseButton1Click:Connect(function()
         if config.KeyLink then
-            setclipboard(config.KeyLink)
+            pcall(setclipboard, config.KeyLink)
             input.Text = "🔗 Key link copied!"
         end
     end)
 
     discordBtn.MouseButton1Click:Connect(function()
         if config.DiscordLink then
-            setclipboard(config.DiscordLink)
+            pcall(setclipboard, config.DiscordLink)
             input.Text = "💬 Discord copied!"
         end
     end)
